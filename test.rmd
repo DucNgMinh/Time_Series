@@ -1,0 +1,27 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+The code chunk appears:
+```{r}
+library(readxl)
+df1 <- read_excel('C:\\Users\\Duc\\R Projects\\Time Series\\Gross Sale Revenues - HSG.xlsx')
+df1
+```
+
+Type any R code in the chunk, for example:
+```{r}
+gross_sale_revenue = ts(df1, start = c(2008,1), frequency = 4)
+```
+```{r}
+plot(gross_sale_revenue[,"Gross_Sale_Revenues"])
+```
+```{r}
+df1 = data.frame(df1)
+time = seq(df1$Time)
+summary(time)
+```
+```{r}
+plot(time, df1$Gross_Sale_Revenues)
+abline(lm(df1$Gross_Sale_Revenues ~ time))
+```

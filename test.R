@@ -10,6 +10,7 @@ View(df)
 ts(df, start = c(2004,1), frequency = 4)
 gdp1 = ts(gdp1, start = c(2004,1), frequency = 4)
 
+
 plot.ts(gdp1)
 plot.ts(gdp2)
 
