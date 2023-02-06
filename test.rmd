@@ -5,23 +5,113 @@ output: html_notebook
 The code chunk appears:
 ```{r}
 library(readxl)
-df1 <- read_excel('C:\\Users\\Duc\\R Projects\\Time Series\\Gross Sale Revenues - HSG.xlsx')
+df1 <- read_excel('C:\\Users\\ADMIN\\RProjects\\Time_Series\\Gross Sale Revenues - HSG.xlsx')
 df1
 ```
 
 Type any R code in the chunk, for example:
 ```{r}
-gross_sale_revenue = ts(df1, start = c(2008,1), frequency = 4)
+gross_sale_revenue <- ts(df1, start = c(2008,1), frequency = 4)
 ```
 ```{r}
-plot(gross_sale_revenue[,"Gross_Sale_Revenues"])
+plot(gross_sale_revenue)
 ```
 ```{r}
-df1 = data.frame(df1)
-time = seq(df1$Time)
+time <- seq(gross_sale_revenue)
 summary(time)
 ```
 ```{r}
-plot(time, df1$Gross_Sale_Revenues)
-abline(lm(df1$Gross_Sale_Revenues ~ time))
+plot(time, gross_sale_revenue)
+abline(lm(gross_sale_revenue ~ time))
 ```
+```{r}
+s1 <- rep(c(1,0,0,0), 14)
+s1 <- c(s1, c(1,0,0))
+
+s2 <- rep(c(0,1,0,0), 14)
+s2 <- c(s2, c(0,1,0))
+
+s3 <- rep(c(0,0,1,0), 14)
+s3 <- c(s3, c(0,0,1))
+
+s4 <- rep(c(0,0,0,1), 14)
+s4 <- c(s4, c(0,0,0))
+```
+```{r}
+## regression with seasonal dummies
+reg42 <- lm(gross_sale_revenue ~ s2 +s3 + s4)
+summary(reg42)
+```
+```{r}
+## linear trend + seasonality
+## additive form
+summary( lm(gross_sale_revenue ~ time + s2 +s3 + s4) )
+```
+```{r}
+## Multiplicative form
+summary( lm(gross_sale_revenue ~ time + time * s2 + time * s3 + time * s4) )
+```
+```{r}
+## smoothing and Seasonal adjusted
+## Moving averate series
+library(forecast)
+gross_sale_revenue.ma3 <- ma(gross_sale_revenue, order = 3, centre = TRUE)
+```
+```{r}
+gross_sale_revenue.dema3 <- gross_sale_revenue - gross_sale_revenue.ma3
+gross_sale_revenue.dema3
+```
+```{r}
+# component decomposition (additive)
+decom.gross_sale_revenue <- decompose(gross_sale_revenue, type = 'additive')
+plot(decom.gross_sale_revenue)
+```
+```{r}
+gross_sale_revenue.trend <- decom.gross_sale_revenue$trend
+gross_sale_revenue.seas <- decom.gross_sale_revenue$seasonal
+gross_sale_revenue.rand <- decom.gross_sale_revenue$random
+gross_sale_revenue.trendseas <- gross_sale_revenue - gross_sale_revenue.rand  # trend + seasonality
+```
+```{r}
+plot(gross_sale_revenue, col = 'blue')
+lines(gross_sale_revenue.trend)
+lines(gross_sale_revenue.trendseas, col = 'red')
+```
+```{r}
+## Seasonal coefficients
+gross_sale_revenue.weight <- gross_sale_revenue.trendseas - gross_sale_revenue.trend
+print(gross_sale_revenue.weight)
+```
+```{r}
+## Regression of Trend component
+summary(lm(gross_sale_revenue.trend ~ time))
+```
+```{r}
+summary(lm( log(gross_sale_revenue.trend) ~ time ) )
+```
+```{r}
+# Component decomposition (multiplication)
+decom.gross_sale_revenue.m <- decompose(gross_sale_revenue, type = 'm')
+plot(decom.gross_sale_revenue.m)
+```
+```{r}
+gross_sale_revenue.trend.m <- decom.gross_sale_revenue.m$trend
+gross_sale_revenue.seas.m <- decom.gross_sale_revenue.m$seasonal
+gross_sale_revenue.rand.m <- decom.gross_sale_revenue.m$random
+gross_sale_revenue.trendseas.m <- gross_sale_revenue / gross_sale_revenue.rand.m  # trend + seasonality
+```
+```{r}
+plot(gross_sale_revenue, col = 'blue')
+lines(gross_sale_revenue.trendseas.m, col = 'red')
+```
+```{r}
+gross_sale_revenue.weight.m <- gross_sale_revenue.trendseas.m / gross_sale_revenue.trend.m
+print(gross_sale_revenue.weight.m)
+```
+```{r}
+summary( lm( gross_sale_revenue.trend.m ~ time))
+```
+```{r}
+summary( lm( log(gross_sale_revenue.trend.m) ~ time))
+```
+

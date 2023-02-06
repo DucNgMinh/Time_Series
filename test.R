@@ -1,6 +1,6 @@
 library(readxl)
 
-df <- read_excel('C:\\Users\\Duc\\R Projects\\Time Series\\Data\\VN_GDP_2021.xlsx')
+df <- read_excel('C:\\Users\\ADMIN\\RProjects\\Time_Series\\Data\\VN_GDP_2021.xlsx')
 
 edit(df)
 save(df, file = "VN_GDP_2021.rda")
