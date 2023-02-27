@@ -1,0 +1,101 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+The [R plugin](https://www.jetbrains.com/help/pycharm/r-plugin-support.html) for IntelliJ-based IDEs provides
+handy capabilities to work with the [R Markdown](https://www.jetbrains.com/help/pycharm/r-markdown.html) files.
+To [add](https://www.jetbrains.com/help/pycharm/r-markdown.html#add-code-chunk) a new R chunk,
+position the caret at any line or the code chunk, then click "+".
+
+The code chunk appears:
+```{r}
+library(readxl)
+df1 <- read_excel('C:\\Users\\ADMIN\\RProjects\\Time_Series\\Gross Sale Revenues - HSG.xlsx')
+df1
+```
+
+Type any R code in the chunk, for example:
+```{r}
+gross_sale_revenue <- ts(df1, start = c(2008,1), frequency = 4)
+time <- seq(gross_sale_revenue)
+summary(time)
+```
+```{r}
+s1 <- rep(c(1,0,0,0), 14)
+s1 <- c(s1, c(1,0,0))
+
+s2 <- rep(c(0,1,0,0), 14)
+s2 <- c(s2, c(0,1,0))
+
+s3 <- rep(c(0,0,1,0), 14)
+s3 <- c(s3, c(0,0,1))
+
+s4 <- rep(c(0,0,0,1), 14)
+s4 <- c(s4, c(0,0,0))
+```
+```{r}
+time_predict <- seq(60, 118)
+data_predict <- data.frame(time = time_predict, seas2 = s3 , seas3= s4, seas4= s1)
+data_predict
+```
+```{r}
+## linear trend + seasonality
+## additive form
+reg_trend_seas_add <- lm(gross_sale_revenue ~ time + s2 +s3 + s4)
+summary(reg_trend_seas_add)
+```
+```{r}
+predict(reg_trend_seas_add, data_predict)
+```
+```{r}
+## MAPE:full
+MAPE( fitted(reg_trend_seas_add), df1$Gross_Sale_Revenues)
+## MAPE:2022
+MAPE( fitted(reg_trend_seas_add)[57:59], df1$Gross_Sale_Revenues[57:59])
+```
+```{r}
+## linear trend + seasonality
+## Multiplicative form
+reg_trend_seas_mul <- lm(gross_sale_revenue ~ time + time * s2 + time * s3 + time * s4)
+summary(reg_trend_seas_mul)
+```
+```{r}
+predict(reg_trend_seas_mul, data_predict)
+```
+```{r}
+## MAPE:full
+MAPE( fitted(reg_trend_seas_mul), df1$Gross_Sale_Revenues)
+## MAPE:2022
+MAPE( fitted(reg_trend_seas_mul)[57:59], df1$Gross_Sale_Revenues[57:59])
+```
+```{r}
+## Holt_Winter
+## Holt_Winter_add
+hw_add <- HoltWinters(gross_sale_revenue, seasonal = 'a')
+hw_add
+```
+```{r}
+predict(hw_add, n.ahead = 5)
+```
+```{r}
+## MAPE:full
+MAPE( fitted(hw(gross_sale_revenue, seasonal = "additive")), df1$Gross_Sale_Revenues)
+## MAPE:2022
+MAPE( fitted(hw(gross_sale_revenue, seasonal = "additive"))[57: 59], df1$Gross_Sale_Revenues[57:59])
+```
+```{r}
+hw_mul <- hw(gross_sale_revenue, seasonal = 'm')
+hw_mul
+```
+```{r}
+predict(hw_mul, n.ahead = 5)
+```
+```{r}
+MAPE( fitted(hw(gross_sale_revenue, seasonal = "m")), df1$Gross_Sale_Revenues)
+## MAPE:2022
+MAPE( fitted(hw(gross_sale_revenue, seasonal = "m"))[57: 59], df1$Gross_Sale_Revenues[57:59])
+```
+
+Now, click the **Run** button on the chunk toolbar to [execute](https://www.jetbrains.com/help/pycharm/r-markdown.html#run-r-code) the chunk code. The result should be placed under the chunk.
+Click the **Knit and Open Document** to build and preview an output.

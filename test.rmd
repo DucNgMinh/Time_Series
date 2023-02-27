@@ -37,15 +37,12 @@ s3 <- c(s3, c(0,0,1))
 s4 <- rep(c(0,0,0,1), 14)
 s4 <- c(s4, c(0,0,0))
 ```
-```{r}
-## regression with seasonal dummies
-reg42 <- lm(gross_sale_revenue ~ s2 +s3 + s4)
-summary(reg42)
-```
+
 ```{r}
 ## linear trend + seasonality
 ## additive form
-summary( lm(gross_sale_revenue ~ time + s2 +s3 + s4) )
+reg_trend_seas_add <- lm(gross_sale_revenue ~ time + s2 +s3 + s4)
+summary(reg_trend_seas_add )
 ```
 ```{r}
 ## Multiplicative form
