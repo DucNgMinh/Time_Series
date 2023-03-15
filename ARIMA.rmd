@@ -1,0 +1,114 @@
+---
+title: "ARIMA"
+author: "MAX"
+date: "2023-03-14"
+output: html_document
+```{r}
+library(readxl)
+HSG <- read_excel("C:/Users/Admin/RProjects/Time_Series/HSG.xlsx", col_names = FALSE)
+```
+---
+```{r}
+vtc<-ts(HSG, frequency = 1)
+```
+```{r}
+plot.ts(vtc)
+```
+```{r}
+plot.ts(diff(vtc))
+```
+
+
+```{r}
+vtc.time<-seq_along(vtc)
+vtc.detrend<-resid(lm(vtc~vtc.time))
+```
+```{r}
+plot.ts(vtc.detrend)
+```
+
+
+
+```{r}
+library('urca')
+```
+```{r}
+summary(ur.df(vtc, type = 'trend'))
+## t-stat = -1.8842
+## at 5%
+```
+```{r}
+summary(ur.df(diff(vtc), type = 'drift'))
+```
+```{r}
+acf(diff(vtc))
+pacf(diff(vtc))
+```
+```{r}
+library('forecast')
+```
+
+
+```{r}
+reg.vtc.arima11113<-Arima(vtc, order = c(11,1,13),include.constant = TRUE)
+summary(reg.vtc.arima11113)
+```
+```{r}
+reg.vtc.arima112<-Arima(vtc, order = c(1,1,2),include.constant = TRUE)
+summary(reg.vtc.arima112)
+```
+```{r}
+reg.vtc.arima111<-Arima(vtc, order = c(1,1,1),include.constant = TRUE)
+summary(reg.vtc.arima111)
+```
+```{r}
+reg.vtc.arima111$aic
+```
+```{r}
+autoplot(Arima(vtc, order = c(2,1,5),include.constant = TRUE))
+```
+```{r}
+checkresiduals(reg.vtc.arima11113)
+```
+
+```{r}
+vtc.forecast.arima11113<-forecast(reg.vtc.arima11113, h = 10)
+View(vtc.forecast.arima11113$mean)
+```
+```{r}
+rmse(vtc, fitted(vtc.forecast.arima11113))
+mape(vtc, fitted(vtc.forecast.arima11113)) * 100
+```
+```{r}
+rmse(c(11.55,12.35,12.65, 13.2, 12.65, 12.5, 12.9, 13.1, 13.2,13.1), vtc.forecast.arima11113$mean)
+```
+```{r}
+mape(c(11.55,12.35,12.65, 13.2, 12.65, 12.5, 12.9, 13.1, 13.2,13.1), vtc.forecast.arima11113$mean) * 100
+```
+```{r}
+summary(Arima(vtc, order = c(3,1,2),include.constant = TRUE))
+```
+```{r}
+summary(Arima(vtc, order = c(4,1,5),include.constant = TRUE))
+```
+```{r}
+reg.vtc.arima312<-Arima(vtc, order = c(3,1,2),include.constant = TRUE)
+summary(reg.vtc.arima312)
+```
+```{r}
+autoplot(Arima(vtc, order = c(3,1,2),include.constant = TRUE))
+```
+```{r}
+rmse(vtc, fitted(reg.vtc.arima312))
+mape(vtc, fitted(reg.vtc.arima312)) * 100
+```
+```{r}
+vtc.forecast.arima312<-forecast(Arima(vtc, order = c(3,1,2),include.constant = TRUE), h = 10)
+print(vtc.forecast.arima312$mean)
+print(rmse(c(11.55,12.35,12.65, 13.2, 12.65, 12.5, 12.9, 13.1, 13.2,13.1), vtc.forecast.arima312$mean))
+print(mape(c(11.55,12.35,12.65, 13.2, 12.65, 12.5, 12.9, 13.1, 13.2,13.1), vtc.forecast.arima312$mean) * 100)
+```
+
+
+
+
