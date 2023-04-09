@@ -1,0 +1,189 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+The [R plugin](https://www.jetbrains.com/help/pycharm/r-plugin-support.html) for IntelliJ-based IDEs provides
+handy capabilities to work with the [R Markdown](https://www.jetbrains.com/help/pycharm/r-markdown.html) files.
+To [add](https://www.jetbrains.com/help/pycharm/r-markdown.html#add-code-chunk) a new R chunk,
+position the caret at any line or the code chunk, then click "+".
+
+The code chunk appears:
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+library(Hmisc)
+library(tidyverse)
+library(Metrics)
+library(astsa)
+library(tseries)
+library(readxl)
+library(tsutils)
+library(forecast)
+library(urca)
+library(lmtest)
+library(vars)
+library(tsDyn)
+```
+
+Type any R code in the chunk, for example:
+```{r}
+df <- read_excel("C:\\Users\\Admin\\RProjects\\Time_Series\\GSO_2005_2019_example.xlsx", col_names = TRUE)
+df
+```
+```{r}
+summary(df$v07)
+```
+```{r}
+v07s <- (df$v07 - mean(df$v07))/ sd(df$v07)
+median(v07s)
+```
+```{r}
+cor(df$v07, df$v08)
+```
+```{r}
+# test for correlation of v07 and v06, at 5%
+cor.test(df$v07, df$v06)
+```
+p-value =  2.2e-16 < 5% -> Reject H0, correlated
+```{r}
+#Compare correlation among v03, v05, vo6, v07
+cor(data.frame(df$v03, df$v05, df$v06, df$v07))
+```
+## Generate time trend variable 1
+# Regress v07 on time series
+coefficients of determination = ?
+```{r}
+t <- seq_along(df$v07)
+plot.ts(df$v07)
+```
+```{r}
+summary( lm(df$v07 ~ t) )
+```
+# coefficients of determination =  R square = 0.7103
+# At 5%, test for significant of slope: Reject H0: significant
+
+```{r}
+# log-linear model
+log_linear = lm(log(df$v07) ~ t)
+summary( log_linear)
+```
+```{r}
+(exp(log_linear$coefficients[[2]]) - 1 ) *100
+```
+```{r}
+summary(lm( df$v07 ~ t + I(t^2)))
+```
+đỉnh nằm bên phải
+```{r}
+length(df$v07)
+```
+```{r}
+d <- c(rep(0,48), rep(1,144))
+```
+```{r}
+summary(lm(df$v07~ t + d))
+# bỏ qua tính xu thế, xu hướng giảm
+```
+```{r}
+# Regress on seasonal dummies
+seas <- seasdummy(192, 12)
+summary(lm(df$v07 ~ seas ))
+# coefficient for January = -29.076
+```
+```{r}
+# Regress v07 on time trend and seasonal dummies
+# Estimated on difference between Feb and Jan
+summary(lm(df$v07 ~ t + seas ))
+# bỏ ra tính xu thế, Jan Feb chênh lệch nhau: seas2 - seas1 + t = 30.385
+# bỏ ra tính xu thế, Jan March chênh lệch nhau: seas3 - seas1 + 2 * t = 6.65187
+```
+```{r}
+# Regress time trend
+regl <- lm(log(df$v07) ~ t + seas)
+# First residual
+residuals(regl)
+```
+```{r}
+v07 <- ts(df$v07, start = c(2004,1), frequency= 12)
+decom.v07.a <- decompose(v07, type = 'additive')
+```
+```{r}
+decom.v07.a$trend
+```
+```{r}
+decom.v07.a$seasonal
+```
+```{r}
+# Random (irregular) component of 2006 January
+decom.v07.a$random
+```
+```{r}
+summary(ur.df(v07, type = 'trend', lag= 0))
+# coefficient of trend : 0.287
+# test for trend should be added: Reject H0, nesscessary
+#
+
+# unit root
+# H0: unit root
+# H1: no
+# |tau_stat| < |tau_3_0.05| -> Not Reject H0 -> Unit Root ( + have trend)
+# Non-stationary + around trend -> Not trend-stationary
+# At 10% reject H0 -> No UR (+ trend) -> stationary around trend -> trend stationary
+```
+```{r}
+summary(ur.df(diff(v07), type = 'trend'))
+# At 5%, T-test, trend is nescessary
+```
+```{r}
+summary(ur.df(diff(v07), type = 'drift'))
+# At 5%, T-test, const is nescessary
+```
+
+```{r}
+summary(ur.df(diff(v07), type = 'none'))
+```
+```{r}
+pacf(diff(v07), pl = FALSE)
+```
+```{r}
+acf(diff(v07), plot = FALSE)
+```
+```{r}
+ar1.ls <- arma(diff(v07), order = c(1,0))
+summary(ar1.ls)
+# long run mean: 3.716 / (1 - (-0.36703))
+```
+```{r}
+ar1m.ls <- arima(diff(v07), order = c(1,0,0))
+summary(ar1m.ls)
+# Long-run mean intercept: 26889
+# variance of shock : -946.5
+```
+```{r}
+summary(arima(v07, order = c(1,1,0)))
+```
+```{r}
+summary(Arima(v07, order = c(1,1,0), include.constant = TRUE))
+```
+```{r}
+summary(Arima(v07, order = c(1,1,0), include.drift = TRUE))
+```
+```{r}
+arima.ls112 <- Arima(v07, order = c(1,1,2), include.constant = TRUE)
+summary(arima.ls112)
+```
+```{r}
+checkresiduals(arima.ls112)
+# Reject H0 : Residual are Not white noise
+```
+```{r}
+resid <- resid(arima.ls112)
+garch11_112 <- garch(resid, order = c(1,1))
+```
+```{r}
+# test for cointegratation (Johansen-procedure)
+data_1 = data.frame(df$v05, df$v06, df$v07)
+summary(ca.jo(data_1, type = 'trace'))
+```
+Now, click the **Run** button on the chunk toolbar to [execute](https://www.jetbrains.com/help/pycharm/r-markdown.html#run-r-code) the chunk code. The result should be placed under the chunk.
+Click the **Knit and Open Document** to build and preview an output.
